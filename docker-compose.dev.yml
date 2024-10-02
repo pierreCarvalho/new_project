@@ -1,0 +1,51 @@
+version: "3.3"
+networks:
+  musicfy_network:
+    driver: bridge
+  common_local_network:
+    driver: bridge
+    name: common_local_network
+
+services:
+  mysql:
+    image: mysql:8.0.39
+    ports:
+      - "3306:3306"
+    volumes:
+      - musicfy-datavolume:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: musicfy
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_HOST: mysql
+    networks:
+      - musicfy_network
+      - common_local_network
+
+  django:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: mfy-django
+    restart: always
+    env_file:
+      - ./.env
+    entrypoint: [ "bash", "./docker-entrypoint.sh" ]
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mysql
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "10"
+    networks:
+      - musicfy_network
+      - common_local_network
+
+volumes:
+  musicfy-datavolume:
